@@ -15,7 +15,7 @@
     </db:config>
 
     <flow name="samplemuleappFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/her" doc:name="HTTP">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/kal" doc:name="HTTP">
             <http:response statusCode="#[migration::HttpListener::httpListenerResponseSuccessStatusCode(vars)]">
                 <!--Migration WARN: Avoid using an outbound property to determine the status code.-->
                 <!--    For more information refer to:-->
