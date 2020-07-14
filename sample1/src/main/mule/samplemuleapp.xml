@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:compatibility="http://www.mulesoft.org/schema/mule/compatibility" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/compatibility http://www.mulesoft.org/schema/mule/compatibility/current/mule-compatibility.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+    <http:listener-config name="HTTP_Listener_Configuration" doc:name="HTTP Listener Configuration">
+        <http:listener-connection host="0.0.0.0" port="8088" />
+    </http:listener-config>
+
+    <db:config name="MySQL_Configuration" doc:name="MySQL Configuration">
+        <db:my-sql-connection database="mule" host="localhost" port="3306" user="root" password="123456">
+            <!--Migration ERROR: Add a suitable JDBC driver dependency for this connection.-->
+            <!--    For more information refer to:-->
+            <!--        * https://docs.mulesoft.com/db-connector/1.8/database-connector-examples#configure-a-database-connection-->
+            <reconnection failsDeployment="true" />
+        </db:my-sql-connection>
+    </db:config>
+
+    <flow name="samplemuleappFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/rr" doc:name="HTTP">
+            <http:response statusCode="#[migration::HttpListener::httpListenerResponseSuccessStatusCode(vars)]">
+                <!--Migration WARN: Avoid using an outbound property to determine the status code.-->
+                <!--    For more information refer to:-->
+                <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties-->
+                <http:headers>#[migration::HttpListener::httpListenerResponseHeaders(vars)]</http:headers>
+            </http:response>
+            <!-- <http:error-response statusCode="#[vars.statusCode default migration::HttpListener::httpListenerResponseErrorStatusCode(vars)]">
+                Migration WARN: Avoid using an outbound property to determine the status code.
+                   For more information refer to:
+                       * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties
+                <http:headers>#[migration::HttpListener::httpListenerResponseHeaders(vars)]</http:headers>
+            </http:error-response> -->
+        </http:listener>
+
+
+     <flow-ref doc:name="Flow Reference" doc:id="0d8b3350-71a0-411f-b232-ddf6a9176e68" name="samplemuleappSub_Flow"/>
+
+        
+
+    </flow>
+	<sub-flow name="samplemuleappSub_Flow" doc:id="a6bf2a2a-e2bd-46a8-8c91-c34b84a8f4d0" >
+		<db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <!--Migration INFO: Streaming is enabled by default in Mule 4-->
+            <!--    For more information refer to:-->
+            <!--        * https://docs.mulesoft.com/mule-runtime/4.3/migration-connectors-database#database_streaming-->
+            <db:sql>select * from developers</db:sql>
+        </db:select>
+		<set-variable variableName="mule" value="#[payload]" doc:name="Variable" />
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload>%dw 2.0
+output application/json  
+---
+{
+  mydata: vars.mule
+}</ee:set-payload>
+            </ee:message>
+        </ee:transform>
+	</sub-flow>
+
+</mule>
